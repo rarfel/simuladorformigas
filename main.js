@@ -6,9 +6,9 @@ quadro.height = quadro.clientHeight;
 
 const halfWidht = quadro.width/2
 const halfHeight = quadro.height/2
-let movimento = [];
 let rastro = [];
 let isAlive = false;
+let isDrawing = 'comida';
 
 context.translate(halfWidht, halfHeight);
 
@@ -29,7 +29,7 @@ class Formiga
         this.x = x
         this.y = y
         this.angulo = angulo
-        rastro.push([x,y])
+        this.rastro = [].push([x,y])
 
         if(this.carregando == false)
         {
@@ -40,30 +40,9 @@ class Formiga
             this.x -= Math.cos(this.angulo) * this.velocidade;
             this.y -= Math.sin(this.angulo) * this.velocidade;
         }
-        
-        if(movimento[0])
-        {
-            for(let x = 0; x < movimento.length;x++)
-            {
-                // this.colisao(Math.floor(movimento[x][0]),Math.floor(movimento[x][1]),(Math.atan2(Math.floor(this.y),Math.floor(this.x))))
-                if(this.distancia(this.x,this.y,movimento[x][0],movimento[x][1]) <= 5)
-                // if(Math.floor(this.x) >= Math.floor(movimento[x][0]) 
-                // && Math.floor(this.y) >= Math.floor(movimento[x][1]) 
-                // && (Math.floor(this.x) <= (Math.floor(movimento[x][0]) + 10) 
-                // && Math.floor(this.y) <= (Math.floor(movimento[x][1]) + 10)))
-                {
-                    if(this.carregando == false)
-                    {
-                        movimento.at(x).pop()
-                        this.carregando = true
-                        this.angulo = (Math.atan2(Math.floor(this.y),Math.floor(this.x)));
-                    }
-                }
-            }
-        }
         if(this.carregando == true)
         {
-            draw(this.x - 3.5,this.y - 3.5,10,10)
+            comida.draw(this.x - 3.5,this.y - 3.5,10,10)
 
             if(this.distancia(this.x,this.y,0,0) < 20)
             {
@@ -123,6 +102,22 @@ class Formiga
     }
     
 }
+class Block 
+{
+    constructor(color)
+    {
+        this.color = color
+        this.movimento = []
+    }
+    draw(x,y)
+    {
+        context.fillStyle = this.color;
+        context.fillRect(x,y,10,10);
+    }
+}
+
+let comida = new Block("#00ff00")
+let parede = new Block("#626262")
 
 function animate()
 {
@@ -135,10 +130,15 @@ function animate()
     context.fill()
     context.closePath()
 
-    if(movimento[0])
-    for(let i = 0; i < movimento.length; i ++)
+    if(comida.movimento[0])
+    for(let i = 0; i < comida.movimento.length; i ++)
     {
-        draw(movimento[i][0],movimento[i][1],10,10)
+        comida.draw(comida.movimento[i][0],comida.movimento[i][1],10,10)
+    }
+    if(parede.movimento[0])
+    for(let i = 0; i < parede.movimento.length; i ++)
+    {
+        parede.draw(parede.movimento[i][0],parede.movimento[i][1],10,10)
     }
     for (let x = 0; x < rastro.length; x++) {
         feromonio(rastro[x][0],rastro[x][1],1)
@@ -148,6 +148,31 @@ function animate()
     {
         const formiga = formigas.get(i);
         formiga.atualizar(formiga.x,formiga.y,formiga.angulo);
+        if(comida.movimento[0])
+        {
+            for(let x = 0; x < comida.movimento.length;x++)
+            {
+                if(formiga.distancia(formiga.x,formiga.y,comida.movimento[x][0],comida.movimento[x][1]) <= 5)
+                {
+                    if(formiga.carregando == false)
+                    {
+                        comida.movimento.at(x).pop()
+                        formiga.carregando = true
+                        formiga.angulo = (Math.atan2(Math.floor(formiga.y),Math.floor(formiga.x)));
+                    }
+                }
+            }
+        }
+        if(parede.movimento[0])
+        {
+            for(let x = 0; x < parede.movimento.length; x++)
+            {
+                if(formiga.distancia(formiga.x,formiga.y,parede.movimento[x][0],parede.movimento[x][1]) <= 6)
+                {
+                    formiga.angulo = (Math.random() * Math.PI * 2)
+                }
+            }
+        }
         formiga.colisao(halfWidht,halfHeight,(Math.random() * Math.PI * 2))
         formiga.drawFormiga(context);
         formiga.distancia(formiga.x,formiga.y,0,0)
@@ -176,12 +201,6 @@ function makeFormigas(numeroDeFormigas)
 
 let clicked = false;
 
-function draw(x,y,w,h)
-{
-    context.fillStyle = "#00ff00";
-    context.fillRect(x,y,w,h);
-}
-
 function feromonio(x,y,radius)
 {
 
@@ -194,9 +213,16 @@ function feromonio(x,y,radius)
 
 quadro.addEventListener('mousedown',(e)=>{
     clicked = true
-    movimento.push([e.offsetX - halfWidht,e.offsetY-halfHeight])
-    draw(e.offsetX - halfWidht,e.offsetY-halfHeight,10,10)
-    // console.log(movimento);
+    if(isDrawing == 'comida')
+    {
+        comida.movimento.push([e.offsetX - halfWidht,e.offsetY-halfHeight])
+        comida.draw(e.offsetX - halfWidht,e.offsetY-halfHeight)
+    }
+    if(isDrawing == 'parede')
+    {
+        parede.movimento.push([e.offsetX - halfWidht,e.offsetY-halfHeight])
+        parede.draw(e.offsetX - halfWidht,e.offsetY-halfHeight)
+    }
 })
 
 quadro.addEventListener('mouseup',()=>{
@@ -206,8 +232,16 @@ quadro.addEventListener('mouseup',()=>{
 quadro.addEventListener('mousemove',(e)=>{
     if(clicked == true)
     {
-        draw(e.offsetX - halfWidht,e.offsetY-halfHeight,10,10)
-        movimento.push([e.offsetX - halfWidht,e.offsetY-halfHeight])
+        if(isDrawing == 'comida')
+        {
+            comida.movimento.push([e.offsetX - halfWidht,e.offsetY-halfHeight])
+            comida.draw(e.offsetX - halfWidht,e.offsetY-halfHeight)
+        }
+        if(isDrawing == 'parede')
+        {
+            parede.movimento.push([e.offsetX - halfWidht,e.offsetY-halfHeight])
+            parede.draw(e.offsetX - halfWidht,e.offsetY-halfHeight)
+        }
     }
 })
 
@@ -216,5 +250,13 @@ document.addEventListener('keypress',(e)=>{
     {
         isAlive = true;
         animate()
+    }
+    if(e.key == '1')
+    {
+        isDrawing = 'comida';
+    }
+    if(e.key == '2')
+    {
+        isDrawing = 'parede';
     }
 })
