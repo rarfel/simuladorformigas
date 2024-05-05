@@ -20,9 +20,9 @@ class Formiga
         this.angulo = (Math.random() * Math.PI * 2);
         this.x = x + Math.cos(this.angulo) * this.raio;
         this.y = y + Math.sin(this.angulo) * this.raio;
-        this.velocidade = 1;
+        this.velocidade = 3;
         this.carregando = false;
-        this.raioDeVisao = 20;
+        this.raioDeVisao = 10;
     }
 
     atualizar(x,y,angulo) 
@@ -44,7 +44,7 @@ class Formiga
         {
             comida.draw(this.x - 3.5,this.y - 3.5,10,10)
 
-            if(this.distancia(this.x,this.y,0,0) < 20)
+            if(this.distancia(this.x,this.y,0,0)[0] < 20)
             {
                 this.carregando = false
             }
@@ -56,7 +56,6 @@ class Formiga
         context.fillStyle = "#0000ff"
         context.fillRect(this.x, this.y, 5, 5)
         context.beginPath()
-        context.arc(this.x+2.5,this.y+2.5,this.raioDeVisao,0,Math.PI * 2)
         context.strokeStyle = '#0000ff'
         context.stroke()
         context.closePath()
@@ -73,14 +72,19 @@ class Formiga
         // context.lineTo(x2,y2);
         // context.stroke();
     
-        let dx = x2 - x1
-        let dy = y2 - y1
+        let adj = x2 - x1
+        let op = y2 - y1
     
-        let a = dx * dx //a = dx^2
-        let b = dy * dy //b = dy^2
+        let a = adj * adj //a = adj^2
+        let b = op * op //b = op^2
     
-        let c = Math.sqrt(a+b) // c = √(a^2 + b^2)
-        return c
+        let hip = Math.sqrt(a+b) // hip = √(a^2 + b^2)
+        //sin = op / hip
+        //cos = adj / hip
+        //tan = op / adj
+        //angle = tan^-1(op/adj) = Math.atan(op/adj)*180 / Math.PI
+        let angle = Math.atan(op/adj) // radians
+        return [hip,adj,op,angle]
     }
     colisao(x,y,newAngle)
     {
@@ -105,25 +109,31 @@ class Formiga
             this.angulo = newAngle; 
         }
     }
-    
 }
+
 class Block 
 {
-    constructor(color)
+    constructor(color,size)
     {
         this.color = color
         this.movimento = []
-        this.size = 10
+        this.size = size
     }
     draw(x,y)
     {
         context.fillStyle = this.color;
         context.fillRect(x,y,this.size,this.size);
     }
+    scream(a,b)
+    {
+        let sum = a+b
+        let sub = a-b
+        return [sum,sub]
+    }
 }
 
-let comida = new Block("#00ff00")
-let parede = new Block("#626262")
+let comida = new Block("#00ff00",8)
+let parede = new Block("#626262",18)
 
 function animate()
 {
@@ -155,9 +165,9 @@ function animate()
         {
             for(let x = 0; x < comida.movimento.length;x++)
             {
-                if(formiga.distancia(formiga.x,formiga.y,comida.movimento[x][0],comida.movimento[x][1]) <= formiga.raioDeVisao+comida.size/2)
+                if(formiga.distancia(formiga.x,formiga.y,comida.movimento[x][0],comida.movimento[x][1])[0] <= formiga.raioDeVisao+comida.size/2)
                 {
-                    if(formiga.distancia(formiga.x,formiga.y,comida.movimento[x][0],comida.movimento[x][1]) <= comida.size/2+2)
+                    if(formiga.distancia(formiga.x,formiga.y,comida.movimento[x][0],comida.movimento[x][1])[0] <= 10)
                     {
                         if(formiga.carregando == false)
                         {
@@ -169,11 +179,7 @@ function animate()
                     {
                         if(formiga.carregando == false)
                         {
-
-                            // context.save()
-                            // context.translate(formiga.x,formiga.y)
-                            // formiga.angulo = (Math.atan2(comida.movimento[x][1],comida.movimento[x][0]))+20;
-                            // context.restore()
+                            formiga.angulo = formiga.distancia(formiga.x,formiga.y,comida.movimento[x][0],comida.movimento[x][1])[3]
                         }
                     }
                 }
@@ -183,15 +189,14 @@ function animate()
         {
             for(let x = 0; x < parede.movimento.length; x++)
             {
-                if(formiga.distancia(formiga.x,formiga.y,parede.movimento[x][0],parede.movimento[x][1]) <= formiga.raioDeVisao)
+                if(formiga.distancia(formiga.x,formiga.y,parede.movimento[x][0],parede.movimento[x][1])[0] <= formiga.raioDeVisao)
                 {
-                    formiga.angulo = -((Math.atan2(parede.movimento[x][1],parede.movimento[x][0]))*180)/Math.PI;
+                    formiga.angulo = formiga.distancia(formiga.x,formiga.y,parede.movimento[x][0],parede.movimento[x][1])[3] * -1   
                 }
             }
         }
         formiga.colisao(halfWidht,halfHeight,(Math.random() * Math.PI * 2))
-        formiga.drawFormiga(context);
-        formiga.distancia(formiga.x,formiga.y,0,0)
+        formiga.drawFormiga(context)
     }
     if(isAlive)
     {
@@ -203,13 +208,15 @@ const formigas = new Map()
 makeFormigas(100)
 animate()
 
+// context.fillStyle = '#ff0000'
+// context.fillRect(180,180,10,10)
+
 function makeFormigas(numeroDeFormigas)
 {
-
     for (let i = 0; i < numeroDeFormigas; i++) 
     {
-    const formiga = new Formiga(0, 0);
-    formigas.set(i,formiga)
+        const formiga = new Formiga(0, 0);
+        formigas.set(i,formiga)
     }
 }
 
@@ -295,4 +302,4 @@ function generateFood(quantity)
     }
 }
 
-generateFood(1000)
+generateFood(0)
