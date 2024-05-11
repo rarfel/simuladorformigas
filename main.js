@@ -124,12 +124,6 @@ class Block
         context.fillStyle = this.color;
         context.fillRect(x,y,this.size,this.size);
     }
-    scream(a,b)
-    {
-        let sum = a+b
-        let sub = a-b
-        return [sum,sub]
-    }
 }
 
 let comida = new Block("#00ff00",8)
